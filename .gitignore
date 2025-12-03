@@ -71,8 +71,5 @@ secrets.yaml
 *_token*
 hf_*
 
-# Sensitive files
-setup.sh
-*.sh
-# (Will add .sh files selectively)
+# Shell scripts are OK to commit (they use env vars now)
 

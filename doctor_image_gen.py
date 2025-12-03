@@ -64,7 +64,14 @@ class DoctorImageGenerator:
             with urllib.request.urlopen(req) as response:
                 result = json.loads(response.read())
                 return result['prompt_id']
-        except Exception as e:
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode() if hasattr(e, 'read') else str(e)
+            try:
+                error_json = json.loads(error_body)
+                print(f"\n❌ ComfyUI Error:")
+                print(json.dumps(error_json, indent=2))
+            except:
+                print(f"\n❌ Error: {error_body}")
             raise RuntimeError(f"Failed to queue prompt: {e}")
     
     def _get_image(self, filename: str, subfolder: str = "", folder_type: str = "output") -> bytes:
@@ -100,8 +107,8 @@ class DoctorImageGenerator:
         
         raise TimeoutError(f"Image generation timed out after {timeout} seconds")
     
-    def _load_workflow(self, workflow_name: str = "doctor_flux_workflow.json") -> dict:
-        """Load ComfyUI workflow JSON"""
+    def _load_workflow(self, workflow_name: str = "flux_pulid_flux_api.json") -> dict:
+        """Load ComfyUI workflow JSON - Uses FLUX-specific PuLID nodes"""
         workflow_path = self.workflows_dir / workflow_name
         
         if not workflow_path.exists():
@@ -119,56 +126,76 @@ class DoctorImageGenerator:
                         positive_prompt: str,
                         negative_prompt: str) -> dict:
         """
-        Update workflow with specific parameters
-        
-        This modifies the workflow JSON to use the provided inputs
+        Update workflow with specific parameters for FLUX + PuLID
         """
-        # Note: The exact node IDs will depend on your workflow structure
-        # This is a template that you'll need to adjust based on your actual workflow
+        import random
+        import shutil
         
-        # Update checkpoint loader (node typically named "Load Checkpoint")
         for node_id, node in workflow.items():
-            if node.get("class_type") == "CheckpointLoaderSimple":
-                node["inputs"]["ckpt_name"] = self.config["model_settings"]["flux_model"]
+            node_type = node.get("class_type", "")
             
-            # Update positive prompt
-            elif node.get("class_type") == "CLIPTextEncode" and "positive" in str(node):
-                node["inputs"]["text"] = positive_prompt
+            # FLUX Model Loaders
+            if node_type == "UNETLoader":
+                node["inputs"]["unet_name"] = "flux1-dev-fp8.safetensors"
             
-            # Update negative prompt
-            elif node.get("class_type") == "CLIPTextEncode" and "negative" in str(node):
-                node["inputs"]["text"] = negative_prompt
+            elif node_type == "DualCLIPLoader":
+                node["inputs"]["clip_name1"] = "t5xxl_fp16.safetensors"
+                node["inputs"]["clip_name2"] = "clip_l.safetensors"
+                node["inputs"]["type"] = "flux"
             
-            # Update image loader for doctor's face
-            elif node.get("class_type") == "LoadImage":
-                # Copy doctor image to ComfyUI input directory
-                import shutil
+            elif node_type == "VAELoader":
+                node["inputs"]["vae_name"] = "ae.safetensors"
+            
+            # PuLID FLUX Loaders
+            elif node_type == "PulidFluxModelLoader":
+                node["inputs"]["pulid_file"] = "pulid_flux_v0.9.0.safetensors"
+            
+            elif node_type == "PulidFluxEvaClipLoader":
+                node["inputs"]["eva_clip_name"] = "EVA02_CLIP_L_336_psz14_s6B.pt"
+            
+            elif node_type == "PulidFluxInsightFaceLoader":
+                node["inputs"]["provider"] = "CUDA"
+            
+            # Apply PuLID with config
+            elif node_type == "ApplyPulidFlux":
+                pulid_config = self.config.get("pulid", {})
+                node["inputs"]["weight"] = pulid_config.get("weight", 1.0)
+                node["inputs"]["start_at"] = pulid_config.get("start_at", 0.0)
+                node["inputs"]["end_at"] = pulid_config.get("end_at", 1.0)
+            
+            # Update prompts (node 9 = positive, node 10 = negative in our workflow)
+            elif node_type == "CLIPTextEncode":
+                if node_id == "9":
+                    node["inputs"]["text"] = positive_prompt
+                elif node_id == "10":
+                    node["inputs"]["text"] = ""  # FLUX doesn't use negative prompts
+            
+            # Load doctor's image
+            elif node_type == "LoadImage":
                 filename = os.path.basename(doctor_image_path)
                 comfyui_input = Path("ComfyUI/input") / filename
                 comfyui_input.parent.mkdir(exist_ok=True, parents=True)
                 shutil.copy2(doctor_image_path, comfyui_input)
                 node["inputs"]["image"] = filename
             
-            # Update sampler settings
-            elif node.get("class_type") == "KSampler":
-                node["inputs"]["steps"] = self.config["model_settings"]["steps"]
-                node["inputs"]["cfg"] = self.config["model_settings"]["cfg_scale"]
-                node["inputs"]["sampler_name"] = self.config["model_settings"]["sampler"]
-                node["inputs"]["scheduler"] = self.config["model_settings"]["scheduler"]
-                node["inputs"]["denoise"] = self.config["model_settings"]["denoise"]
+            # KSampler with FLUX settings
+            elif node_type == "KSampler":
+                node["inputs"]["steps"] = 20
+                node["inputs"]["cfg"] = 1.0  # FLUX requirement
+                node["inputs"]["sampler_name"] = "euler"
+                node["inputs"]["scheduler"] = "simple"  # FLUX requirement
+                node["inputs"]["denoise"] = 1.0
+                node["inputs"]["seed"] = random.randint(100000, 999999)
             
-            # Update image dimensions
-            elif node.get("class_type") == "EmptyLatentImage":
-                node["inputs"]["width"] = self.config["image_settings"]["width"]
-                node["inputs"]["height"] = self.config["image_settings"]["height"]
-                node["inputs"]["batch_size"] = self.config["image_settings"]["batch_size"]
+            # Image dimensions
+            elif node_type == "EmptyLatentImage":
+                node["inputs"]["width"] = 1024
+                node["inputs"]["height"] = 1024
+                node["inputs"]["batch_size"] = 1
             
-            # Update ReActor (face swap) settings
-            elif node.get("class_type") == "ReActorFaceSwap":
-                node["inputs"]["swap_model"] = "inswapper_128.onnx"
-                node["inputs"]["facedetection"] = "retinaface_resnet50"
-                node["inputs"]["face_restore_model"] = "GFPGANv1.4.pth"
-                node["inputs"]["face_restore_visibility"] = self.config["face_swap"]["upscale_visibility"]
+            # FLUX Guidance
+            elif node_type == "FluxGuidance":
+                node["inputs"]["guidance"] = 3.5
         
         return workflow
     
