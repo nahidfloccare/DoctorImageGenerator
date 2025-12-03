@@ -1,0 +1,66 @@
+# Doctor Image Generator Configuration
+
+# Model Settings
+model_settings:
+  flux_model: "flux1-dev.safetensors"
+  flux_path: "ComfyUI/models/checkpoints"
+  steps: 20
+  cfg_scale: 3.5
+  sampler: "euler"
+  scheduler: "simple"
+  denoise: 1.0
+
+# Image Generation Settings
+image_settings:
+  width: 1024
+  height: 1024
+  batch_size: 1
+
+# Face Swap Settings (ReActor)
+face_swap:
+  enabled: true
+  blend_strength: 0.85
+  face_restore: true
+  upscale_visibility: 1.0
+
+# Upscale Settings
+upscale:
+  enabled: true
+  scale: 2
+  model: "4x-UltraSharp.pth"
+
+# Prompt Settings
+prompt_settings:
+  negative_prompt: "low quality, blurry, distorted, deformed, ugly, bad anatomy, duplicate, watermark, signature, text, jpeg artifacts, worst quality"
+  style_prefix: "Professional medical photography, high quality, photorealistic, detailed,"
+  
+# Instagram Aesthetic Keywords
+instagram_style:
+  lighting:
+    - "soft studio lighting"
+    - "golden hour lighting"
+    - "natural window light"
+    - "cinematic lighting"
+    - "professional lighting"
+  
+  camera:
+    - "shot on Sony A7R IV"
+    - "85mm lens"
+    - "f/1.8 aperture"
+    - "bokeh background"
+    - "shallow depth of field"
+  
+  vibe:
+    - "candid"
+    - "professional yet approachable"
+    - "medical lifestyle photography"
+    - "authentic moment"
+    - "confident and warm"
+
+# Paths
+paths:
+  comfyui: "ComfyUI"
+  inputs: "inputs"
+  outputs: "outputs"
+  workflows: "workflows"
+
