@@ -2,10 +2,10 @@
 
 # Model Settings
 model_settings:
-  flux_model: "flux1-dev.safetensors"
+  flux_model: "flux1-dev-fp8.safetensors"
   flux_path: "ComfyUI/models/checkpoints"
-  steps: 20
-  cfg_scale: 3.5
+  steps: 100  # Main generation steps (from your workflow)
+  cfg_scale: 1.0  # FLUX requires cfg=1.0
   sampler: "euler"
   scheduler: "simple"
   denoise: 1.0
@@ -56,6 +56,18 @@ instagram_style:
     - "medical lifestyle photography"
     - "authentic moment"
     - "confident and warm"
+
+# Detail Enhancement (Fixes hands, stethoscopes, small objects)
+detail_enhancement:
+  enabled: true  # Set to false to use faster workflow without detailers
+  mode: "facedetailer"  # Options: "facedetailer" (recommended), "meshgraphormer", "basic", "none"
+  # FaceDetailer: Hand & face refinement with upscaling - best quality, +60s generation time
+  # MeshGraphormer: 3D hand mesh prediction - best quality, +30s generation time
+  # Basic: Simple hand detection - good quality, +20s generation time  
+  # None: No hand refinement - fastest, original quality
+  hand_detection_threshold: 0.5
+  hand_refinement_denoise: 0.5  # Higher = more aggressive fix, but may change style
+  face_refinement_denoise: 0.35  # Lower for subtle face improvements
 
 # Paths
 paths:

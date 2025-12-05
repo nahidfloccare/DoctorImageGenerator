@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Image Generator - AI-Powered Professional Medical Photography</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 10px 5px;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .preview-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .generate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .result-container {
+            margin-top: 30px;
+        }
+
+        .result-image {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.3),
+                    transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .progress-text {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 0 10px;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        .progress-step.active {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .progress-step.completed {
+            color: #28a745;
+        }
+
+        .progress-step .step-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+        }
+
+        .progress-step.active .step-icon {
+            background: #667eea;
+            color: white;
+        }
+
+        .progress-step.completed .step-icon {
+            background: #28a745;
+            color: white;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+            height: 30px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            width: 0%;
+        }
+
+        .progress-text {
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .example-prompts {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .example-prompts h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .example-prompt {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            border: 1px solid #e0e0e0;
+        }
+
+        .example-prompt:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Doctor Image Generator</h1>
+            <p>AI-Powered Professional Medical Photography with PuLID + FaceDetailer</p>
+            <div>
+                <span class="badge">✨ Identity Preservation</span>
+                <span class="badge">🎨 Face & Hand Refinement</span>
+                <span class="badge">📸 Professional Quality</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Input -->
+            <div class="card">
+                <h2>📤 Upload & Configure</h2>
+
+                <form id="generateForm">
+                    <div class="form-group">
+                        <label>Doctor Reference Images (1-3)</label>
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">📸</div>
+                            <p><strong>Click to upload</strong> or drag and drop</p>
+                            <p class="hint">PNG, JPG, JPEG, WEBP (max 20MB per file)</p>
+                        </div>
+                        <input type="file" id="fileInput" name="images" class="file-input"
+                            accept="image/png,image/jpeg,image/jpg,image/webp" multiple max="3">
+                        <div class="preview-container" id="previewContainer"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="positivePrompt">Positive Prompt *</label>
+                        <textarea id="positivePrompt" name="positive_prompt" rows="4"
+                            placeholder="Describe the desired scene, pose, background, clothing, and style..."
+                            required></textarea>
+                        <p class="hint">Be specific about pose, attire, background, and lighting</p>
+
+                        <div class="example-prompts">
+                            <h4>💡 Example Prompts (click to use):</h4>
+                            <div class="example-prompt" onclick="setPrompt(this)">
+                                Professional doctor in dark suit, standing in modern clinic atrium, natural lighting,
+                                confident smile, chest-up framing
+                            </div>
+                            <div class="example-prompt" onclick="setPrompt(this)">
+                                Doctor in tailored scrubs, consulting with patient, modern examination room, warm
+                                professional lighting
+                            </div>
+                            <div class="example-prompt" onclick="setPrompt(this)">
+                                Close-up portrait of doctor in dark grey blazer, softly blurred office background, warm
+                                inviting tones
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="negativePrompt">Negative Prompt (optional)</label>
+                        <textarea id="negativePrompt" name="negative_prompt" rows="2"
+                            placeholder="Elements to avoid in the image..."></textarea>
+                        <p class="hint">Default: low quality, blurry, distorted, deformed, stethoscope, text, watermark
+                        </p>
+                    </div>
+
+                    <button type="submit" class="generate-btn" id="generateBtn">
+                        🎨 Generate Image
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Panel: Output -->
+            <div class="card">
+                <h2>🖼️ Generated Image</h2>
+
+                <div id="alertContainer"></div>
+
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p><strong>🎨 Generating your image...</strong></p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar">0%</div>
+                    </div>
+                    <p class="progress-text" id="progressText">Initializing...</p>
+                    <div class="progress-steps">
+                        <div class="progress-step" id="step1">
+                            <div class="step-icon">1</div>
+                            <span>PuLID</span>
+                        </div>
+                        <div class="progress-step" id="step2">
+                            <div class="step-icon">2</div>
+                            <span>Generate</span>
+                        </div>
+                        <div class="progress-step" id="step3">
+                            <div class="step-icon">3</div>
+                            <span>Refine</span>
+                        </div>
+                        <div class="progress-step" id="step4">
+                            <div class="step-icon">4</div>
+                            <span>Upscale</span>
+                        </div>
+                        <div class="progress-step" id="step5">
+                            <div class="step-icon">5</div>
+                            <span>Finish</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-container" id="resultContainer" style="display: none;">
+                    <img id="resultImage" class="result-image" alt="Generated Image">
+                    <a href="#" id="downloadBtn" class="download-btn" download="generated_doctor_image.png">
+                        ⬇️ Download Image
+                    </a>
+                </div>
+
+                <div id="placeholderText" style="text-align: center; padding: 100px 20px; color: #999;">
+                    <p style="font-size: 3rem;">🎨</p>
+                    <p>Your generated image will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const generateForm = document.getElementById('generateForm');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultImage = document.getElementById('resultImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const alertContainer = document.getElementById('alertContainer');
+        const placeholderText = document.getElementById('placeholderText');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        let eventSource = null;
+        let progressInterval = null;
+
+        // Progress simulation for better UX
+        const progressStages = [
+            { percent: 5, text: '🔄 Loading PuLID model...', step: 1 },
+            { percent: 15, text: '🎭 Analyzing face identity...', step: 1 },
+            { percent: 25, text: '⚡ Starting main generation (100 steps)...', step: 2 },
+            { percent: 40, text: '🎨 Generating image...', step: 2 },
+            { percent: 55, text: '✋ Detecting and refining hands...', step: 3 },
+            { percent: 65, text: '🔍 Hand detailing (50 steps)...', step: 3 },
+            { percent: 75, text: '📐 Upscaling image (1.5x)...', step: 4 },
+            { percent: 85, text: '✨ Final refinement pass...', step: 4 },
+            { percent: 95, text: '💾 Saving and processing...', step: 5 }
+        ];
+
+        function resetProgressSteps() {
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById('step' + i);
+                if (step) {
+                    step.classList.remove('active', 'completed');
+                }
+            }
+        }
+
+        function updateProgressStep(stepNum) {
+            // Mark previous steps as completed
+            for (let i = 1; i < stepNum; i++) {
+                const step = document.getElementById('step' + i);
+                if (step) {
+                    step.classList.remove('active');
+                    step.classList.add('completed');
+                    step.querySelector('.step-icon').textContent = '✓';
+                }
+            }
+            // Mark current step as active
+            const currentStep = document.getElementById('step' + stepNum);
+            if (currentStep) {
+                currentStep.classList.add('active');
+            }
+        }
+
+        function startProgressSimulation() {
+            let stageIndex = 0;
+            const totalTime = 180000; // ~3 minutes total expected
+            const intervalTime = totalTime / progressStages.length;
+
+            progressInterval = setInterval(() => {
+                if (stageIndex < progressStages.length) {
+                    const stage = progressStages[stageIndex];
+                    progressBar.style.width = stage.percent + '%';
+                    progressBar.textContent = stage.percent + '%';
+                    progressText.textContent = stage.text;
+                    updateProgressStep(stage.step);
+                    stageIndex++;
+                }
+            }, intervalTime);
+        }
+
+        function stopProgressSimulation(success = true) {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            if (success) {
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                progressText.textContent = '✅ Complete!';
+                updateProgressStep(5);
+                document.getElementById('step5').classList.remove('active');
+                document.getElementById('step5').classList.add('completed');
+                document.getElementById('step5').querySelector('.step-icon').textContent = '✓';
+            }
+        }
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            handleFiles(e.dataTransfer.files);
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            previewContainer.innerHTML = '';
+            Array.from(files).slice(0, 3).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'preview-image';
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function setPrompt(element) {
+            document.getElementById('positivePrompt').value = element.textContent.trim();
+        }
+
+        function showAlert(message, type = 'error') {
+            alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            // Don't auto-clear messages - let user see them
+        }
+
+        function connectProgressStream(sessionId) {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`/api/progress/${sessionId}`);
+
+            eventSource.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'progress') {
+                    const percentage = data.percentage || 0;
+                    progressBar.style.width = percentage + '%';
+                    progressBar.textContent = percentage + '%';
+                    progressText.textContent = `Processing... ${data.value}/${data.max} steps`;
+                } else if (data.type === 'complete') {
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                    progressText.textContent = 'Finalizing...';
+                    eventSource.close();
+                }
+            };
+
+            eventSource.onerror = function (error) {
+                console.error('Progress stream error:', error);
+                eventSource.close();
+            };
+        }
+
+        // Form submission
+        generateForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(generateForm);
+
+            // Validation
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showAlert('Please upload at least one image');
+                return;
+            }
+
+            if (!formData.get('positive_prompt').trim()) {
+                showAlert('Please provide a positive prompt');
+                return;
+            }
+
+            // Generate session ID
+            const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+            // Show loading
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Generating... (~2 minutes)';
+            loadingIndicator.classList.add('active');
+            resultContainer.style.display = 'none';
+            placeholderText.style.display = 'none';
+            alertContainer.innerHTML = ''; // Clear previous messages
+
+            // Reset progress bar and steps
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            progressText.textContent = 'Initializing...';
+            resetProgressSteps();
+
+            // Start simulated progress
+            startProgressSimulation();
+
+            // Start progress tracking (we'll connect after getting response)
+            let progressConnected = false;
+
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Connect to progress stream if we have a session ID
+                if (data.session_id && !progressConnected) {
+                    connectProgressStream(data.session_id);
+                    progressConnected = true;
+                }
+
+                if (data.status === 'success') {
+                    stopProgressSimulation(true);
+                    resultImage.src = data.image_url;
+                    downloadBtn.href = data.image_url;
+                    resultContainer.style.display = 'block';
+                    showAlert('✅ ' + (data.message || 'Image generated successfully!'), 'success');
+                } else {
+                    stopProgressSimulation(false);
+                    showAlert('❌ ' + (data.error || 'Generation failed'));
+                    placeholderText.style.display = 'block';
+                }
+            } catch (error) {
+                stopProgressSimulation(false);
+                showAlert('❌ Network error: ' + error.message);
+                placeholderText.style.display = 'block';
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🎨 Generate Image';
+
+                // Delay hiding loading indicator to show 100% completion
+                setTimeout(() => {
+                    loadingIndicator.classList.remove('active');
+                }, 1000);
+
+                if (eventSource) {
+                    eventSource.close();
+                }
+            }
+        });
+
+        // Check server health on load
+        fetch('/api/health')
+            .then(res => res.json())
+            .then(data => console.log('Server status:', data))
+            .catch(err => console.error('Server not responding:', err));
+    </script>
+</body>
+
+</html>

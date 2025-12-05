@@ -107,15 +107,50 @@ class DoctorImageGenerator:
         
         raise TimeoutError(f"Image generation timed out after {timeout} seconds")
     
-    def _load_workflow(self, workflow_name: str = "flux_pulid_flux_api.json") -> dict:
-        """Load ComfyUI workflow JSON - Uses FLUX-specific PuLID nodes"""
+    def _load_workflow(self, workflow_name: str = None) -> dict:
+        """Load ComfyUI workflow JSON - Uses FLUX-specific PuLID nodes with optional hand refinement"""
+        # Check if detail enhancement is enabled in config
+        if workflow_name is None:
+            detail_config = self.config.get("detail_enhancement", {})
+            mode = detail_config.get("mode", "none")
+            
+            if detail_config.get("enabled", False) and mode != "none":
+                if mode == "facedetailer":
+                    workflow_name = "current_comfyui_workflow.json"
+                    print(f"🔍 Using your current ComfyUI workflow - PuLID + FaceDetailer (hands & face)")
+                elif mode == "meshgraphormer":
+                    workflow_name = "flux_pulid_with_meshgraphormer.json"
+                    print(f"🔍 Using MeshGraphormer workflow - 3D hand mesh prediction for perfect hands")
+                elif mode == "basic":
+                    workflow_name = "flux_pulid_with_detailers.json"
+                    print(f"🔍 Using basic detailer workflow - standard hand/face refinement")
+                else:
+                    workflow_name = "flux_pulid_flux_api.json"
+                    print(f"⚡ Using fast workflow - no hand refinement")
+            else:
+                workflow_name = "flux_pulid_flux_api.json"
+                print(f"⚡ Using fast workflow - no hand refinement")
+        
         workflow_path = self.workflows_dir / workflow_name
         
         if not workflow_path.exists():
-            raise FileNotFoundError(
-                f"Workflow not found: {workflow_path}\n"
-                "Please ensure the workflow file is in the workflows directory."
-            )
+            # Fallback chain: meshgraphormer → basic → standard
+            if "meshgraphormer" in workflow_name:
+                print(f"⚠️ MeshGraphormer workflow not found or models not installed")
+                print(f"   Falling back to basic detailer...")
+                workflow_path = self.workflows_dir / "flux_pulid_with_detailers.json"
+            
+            if not workflow_path.exists() and "detailers" in workflow_name:
+                print(f"⚠️ Basic detailer workflow not found")
+                print(f"   Falling back to standard workflow (no hand refinement)")
+                print(f"   Install Impact Pack for hand/face refinement")
+                workflow_path = self.workflows_dir / "flux_pulid_flux_api.json"
+            
+            if not workflow_path.exists():
+                raise FileNotFoundError(
+                    f"Workflow not found: {workflow_path}\n"
+                    "Please ensure the workflow file is in the workflows directory."
+                )
         
         with open(workflow_path, 'r') as f:
             return json.load(f)
@@ -163,12 +198,16 @@ class DoctorImageGenerator:
                 node["inputs"]["start_at"] = pulid_config.get("start_at", 0.0)
                 node["inputs"]["end_at"] = pulid_config.get("end_at", 1.0)
             
-            # Update prompts (node 9 = positive, node 10 = negative in our workflow)
+            # Update prompts (node 6 = positive, node 7 = negative in your workflow)
             elif node_type == "CLIPTextEncode":
-                if node_id == "9":
+                if node_id == "6":
+                    # Positive prompt
                     node["inputs"]["text"] = positive_prompt
-                elif node_id == "10":
-                    node["inputs"]["text"] = ""  # FLUX doesn't use negative prompts
+                    print(f"   ✓ Set Node 6 (Positive): {positive_prompt[:50]}...")
+                elif node_id == "7":
+                    # Negative prompt - pass the actual negative prompt
+                    node["inputs"]["text"] = negative_prompt
+                    print(f"   ✓ Set Node 7 (Negative): {negative_prompt}")
             
             # Load doctor's image
             elif node_type == "LoadImage":
@@ -180,11 +219,18 @@ class DoctorImageGenerator:
             
             # KSampler with FLUX settings
             elif node_type == "KSampler":
-                node["inputs"]["steps"] = 20
+                # Main generation KSampler (denoise=1.0)
+                if node["inputs"].get("denoise", 1.0) == 1.0:
+                    node["inputs"]["steps"] = self.config.get("model_settings", {}).get("steps", 100)
+                    node["inputs"]["denoise"] = 1.0
+                else:
+                    # Refinement KSampler (denoise < 1.0, after upscaling)
+                    node["inputs"]["steps"] = self.config.get("model_settings", {}).get("steps", 100)
+                    node["inputs"]["denoise"] = 0.35
+                
                 node["inputs"]["cfg"] = 1.0  # FLUX requirement
                 node["inputs"]["sampler_name"] = "euler"
                 node["inputs"]["scheduler"] = "simple"  # FLUX requirement
-                node["inputs"]["denoise"] = 1.0
                 node["inputs"]["seed"] = random.randint(100000, 999999)
             
             # Image dimensions
@@ -196,6 +242,64 @@ class DoctorImageGenerator:
             # FLUX Guidance
             elif node_type == "FluxGuidance":
                 node["inputs"]["guidance"] = 3.5
+            
+            # FaceDetailer nodes for hand refinement
+            elif node_type == "FaceDetailer":
+                detail_config = self.config.get("detail_enhancement", {})
+                node["inputs"]["seed"] = random.randint(100000, 999999)
+                node["inputs"]["cfg"] = 1.0
+                node["inputs"]["sampler_name"] = "euler"
+                node["inputs"]["scheduler"] = "simple"
+                node["inputs"]["denoise"] = detail_config.get("hand_refinement_denoise", 0.35)
+                node["inputs"]["steps"] = detail_config.get("hand_refinement_steps", 50)
+                node["inputs"]["guide_size"] = detail_config.get("hand_guide_size", 1024)
+            
+            # ImageScaleBy for upscaling
+            elif node_type == "ImageScaleBy":
+                # User's workflow uses bicubic 1.5x upscaling
+                node["inputs"]["upscale_method"] = "bicubic"
+                node["inputs"]["scale_by"] = 1.5
+            
+            # ResizeAndPadImage for input preprocessing
+            elif node_type == "ResizeAndPadImage":
+                node["inputs"]["target_width"] = 1024
+                node["inputs"]["target_height"] = 1024
+                node["inputs"]["padding_color"] = "white"
+                node["inputs"]["interpolation"] = "area"
+            
+            # VAEEncode for refinement stage
+            elif node_type == "VAEEncode":
+                # No special configuration needed, just ensure it's connected properly
+                pass
+            
+            # ImageBatch for combining multiple images
+            elif node_type == "ImageBatch":
+                # No special configuration needed
+                pass
+            
+            # UltralyticsDetectorProvider nodes (for hand/face detection)
+            elif node_type == "UltralyticsDetectorProvider":
+                # Node configuration is already set in workflow, no changes needed
+                pass
+            
+            # SAMLoader for segmentation
+            elif node_type == "SAMLoader":
+                node["inputs"]["model_name"] = "sam_vit_h_4b8939.pth"
+                node["inputs"]["device_mode"] = "AUTO"
+            
+            # Detail Enhancement - Hand and Face Refiners (if Impact Pack is installed)
+            elif node_type == "DetailerForEach":
+                detail_config = self.config.get("detail_enhancement", {})
+                # Update denoise levels for detailers
+                if "hand_yolov8s" in node.get("inputs", {}).get("bbox_detector", ["", ""])[0]:
+                    # This is the hand detailer
+                    node["inputs"]["denoise"] = detail_config.get("hand_refinement_denoise", 0.5)
+                    node["inputs"]["bbox_threshold"] = detail_config.get("hand_detection_threshold", 0.5)
+                    node["inputs"]["seed"] = random.randint(100000, 999999)
+                elif "person_yolov8m" in str(node.get("inputs", {})):
+                    # This is the face/person detailer  
+                    node["inputs"]["denoise"] = detail_config.get("face_refinement_denoise", 0.35)
+                    node["inputs"]["seed"] = random.randint(100000, 999999)
         
         return workflow
     
@@ -204,6 +308,7 @@ class DoctorImageGenerator:
                  scenario: str = "consultant",
                  photography_style: str = "cinematic",
                  custom_prompt: str = "",
+                 custom_negative_prompt: Optional[str] = None,
                  output_filename: Optional[str] = None) -> Dict[str, Union[str, dict]]:
         """
         Generate a doctor image
@@ -213,6 +318,7 @@ class DoctorImageGenerator:
             scenario: Scenario to generate (see prompts/templates.py for options)
             photography_style: Photography style (cinematic, editorial, portrait, etc.)
             custom_prompt: Additional custom prompt text
+            custom_negative_prompt: Custom negative prompt (uses default from config if None)
             output_filename: Custom output filename (auto-generated if None)
         
         Returns:
@@ -243,7 +349,14 @@ class DoctorImageGenerator:
             custom_additions=custom_prompt
         )
         
-        print(f"\n📝 Prompt: {positive_prompt[:100]}...")
+        # Use custom negative prompt if provided
+        if custom_negative_prompt:
+            negative_prompt = custom_negative_prompt
+            print(f"\n🚫 Using custom negative prompt: {negative_prompt}")
+        else:
+            print(f"\n🚫 Using default negative prompt: {negative_prompt}")
+        
+        print(f"\n📝 Positive prompt: {positive_prompt[:100]}...")
         
         # Load and update workflow
         print("\n⚙️ Loading workflow...")
@@ -299,6 +412,7 @@ class DoctorImageGenerator:
         
         # Return metadata
         return {
+            "status": "success",
             "output_path": str(output_path),
             "prompt_id": prompt_id,
             "scenario": scenario,
