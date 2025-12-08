@@ -1,18 +1,18 @@
 {
   "3": {
     "inputs": {
-      "seed": 782117951680197,
+      "seed": 673956870577446,
       "steps": 100,
       "cfg": 1,
       "sampler_name": "euler",
-      "scheduler": "simple",
+      "scheduler": "beta",
       "denoise": 1,
       "model": [
         "22",
         0
       ],
       "positive": [
-        "6",
+        "77",
         0
       ],
       "negative": [
@@ -42,7 +42,7 @@
   },
   "6": {
     "inputs": {
-      "text": "Professional doctor in candid moment holding coffee mug, relaxed and approachable. Maintain the person's face and identity. Medium shot, professional medical photography, 8k resolution, photorealistic, hyper-detailed, natural skin texture, shot on Sony A7R IV, 85mm lens, f/8, global illumination, sharp focus, raw photo, uncompressed",
+      "text": "Transform the person in the image: Professional doctor sitting at mahogany desk reviewing documents, focused, soft window lighting. Maintain the person's face and identity. Close-up shot, professional medical photography, 8k resolution, photorealistic, highly detailed natural skin texture, shot on Sony A7R IV, 85mm lens, f/1.8, cinematic lighting, volumetric lighting, raw photo, uncompressed.",
       "clip": [
         "15",
         0
@@ -55,7 +55,7 @@
   },
   "7": {
     "inputs": {
-      "text": "text, watermark, blurry, low-quality, blur, depth of field, bokeh, out of focus",
+      "text": "",
       "clip": [
         "15",
         0
@@ -97,21 +97,11 @@
   },
   "11": {
     "inputs": {
-      "image": "Naik1.jpg"
+      "image": "Venugopal1.jpeg"
     },
     "class_type": "LoadImage",
     "_meta": {
       "title": "Load Image"
-    }
-  },
-  "13": {
-    "inputs": {
-      "unet_name": "flux1-dev-fp8.safetensors",
-      "weight_dtype": "default"
-    },
-    "class_type": "UNETLoader",
-    "_meta": {
-      "title": "Load Diffusion Model"
     }
   },
   "15": {
@@ -141,7 +131,7 @@
       "start_at": 0,
       "end_at": 1,
       "model": [
-        "13",
+        "76",
         0
       ],
       "pulid_flux": [
@@ -168,7 +158,7 @@
   },
   "23": {
     "inputs": {
-      "pulid_file": "pulid_flux_v0.9.0.safetensors"
+      "pulid_file": "pulid_flux_v0.9.1.safetensors"
     },
     "class_type": "PulidFluxModelLoader",
     "_meta": {
@@ -209,7 +199,7 @@
   },
   "27": {
     "inputs": {
-      "image": "Naik2.jpeg"
+      "image": "Venugopal2.jpeg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -218,7 +208,7 @@
   },
   "28": {
     "inputs": {
-      "image": "Naik3.jpg"
+      "image": "Venugopal3.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -303,12 +293,12 @@
       "guide_size": 1024,
       "guide_size_for": true,
       "max_size": 1024,
-      "seed": 779321828417164,
-      "steps": 50,
+      "seed": 200382634081350,
+      "steps": 100,
       "cfg": 1,
       "sampler_name": "euler",
       "scheduler": "simple",
-      "denoise": 0.35,
+      "denoise": 0.25,
       "feather": 5,
       "noise_mask": true,
       "force_inpaint": true,
@@ -333,7 +323,7 @@
         0
       ],
       "model": [
-        "13",
+        "22",
         0
       ],
       "clip": [
@@ -345,7 +335,7 @@
         0
       ],
       "positive": [
-        "6",
+        "77",
         0
       ],
       "negative": [
@@ -364,18 +354,18 @@
   },
   "38": {
     "inputs": {
-      "seed": 101503188653911,
+      "seed": 933770780672364,
       "steps": 100,
       "cfg": 1,
       "sampler_name": "euler",
-      "scheduler": "simple",
+      "scheduler": "beta",
       "denoise": 0.35,
       "model": [
-        "13",
+        "22",
         0
       ],
       "positive": [
-        "6",
+        "77",
         0
       ],
       "negative": [
@@ -429,13 +419,108 @@
       "upscale_method": "bicubic",
       "scale_by": 1.5,
       "image": [
-        "36",
+        "73",
         0
       ]
     },
     "class_type": "ImageScaleBy",
     "_meta": {
       "title": "Upscale Image By"
+    }
+  },
+  "73": {
+    "inputs": {
+      "guide_size": 1024,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 65845373742056,
+      "steps": 100,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 0.15,
+      "feather": 5,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "bbox_threshold": 0.5,
+      "bbox_dilation": 10,
+      "bbox_crop_factor": 3,
+      "sam_detection_hint": "center-1",
+      "sam_dilation": 0,
+      "sam_threshold": 0.93,
+      "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7,
+      "sam_mask_hint_use_negative": "False",
+      "drop_size": 10,
+      "wildcard": "",
+      "cycle": 1,
+      "inpaint_model": false,
+      "noise_mask_feather": 20,
+      "tiled_encode": false,
+      "tiled_decode": false,
+      "image": [
+        "36",
+        0
+      ],
+      "model": [
+        "22",
+        0
+      ],
+      "clip": [
+        "15",
+        0
+      ],
+      "vae": [
+        "19",
+        0
+      ],
+      "positive": [
+        "77",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "bbox_detector": [
+        "74",
+        0
+      ]
+    },
+    "class_type": "FaceDetailer",
+    "_meta": {
+      "title": "FaceDetailer"
+    }
+  },
+  "74": {
+    "inputs": {
+      "model_name": "bbox/face_yolov8m.pt"
+    },
+    "class_type": "UltralyticsDetectorProvider",
+    "_meta": {
+      "title": "UltralyticsDetectorProvider"
+    }
+  },
+  "76": {
+    "inputs": {
+      "ckpt_name": "flux1-krea-dev.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "77": {
+    "inputs": {
+      "guidance": 2.5,
+      "conditioning": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
     }
   }
 }
