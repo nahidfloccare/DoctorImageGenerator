@@ -259,11 +259,11 @@ if __name__ == '__main__':
     print("   ✓ High-quality professional medical imagery")
     print("="*80)
     print("🌐 Access the UI at:")
-    print(f"   Local: http://localhost:2000")
-    print(f"   Network: http://0.0.0.0:2000")
+    print(f"   Local: http://localhost:8000")
+    print(f"   Network: http://0.0.0.0:8000")
     print("="*80)
     print("\n⚠️  Make sure ComfyUI is running on port 8188!")
     print("    Start it with: cd ComfyUI && python3 main.py --listen 0.0.0.0 --port 8188\n")
     
-    app.run(host='0.0.0.0', port=2000, debug=False, threaded=True)
+    app.run(host='0.0.0.0', port=8000, debug=False, threaded=True)
 

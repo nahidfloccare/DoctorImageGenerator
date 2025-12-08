@@ -36,8 +36,8 @@ fi
 mkdir -p uploads outputs
 
 echo "🚀 Starting web server..."
-echo "🌐 Access the UI at: http://localhost:2000"
-echo "🌐 Or from network: http://$(hostname -I | awk '{print $1}'):2000"
+echo "🌐 Access the UI at: http://localhost:8000"
+echo "🌐 Or from network: http://$(hostname -I | awk '{print $1}'):8000"
 echo ""
 echo "Press Ctrl+C to stop the server"
 echo "========================================"

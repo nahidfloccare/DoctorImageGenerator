@@ -1,14 +1,23 @@
 # Doctor Image Generator Configuration
+# Updated to match Doctor.json workflow
 
 # Model Settings
 model_settings:
-  flux_model: "flux1-dev-fp8.safetensors"
+  flux_model: "flux1-krea-dev.safetensors"  # From Doctor.json node 76
   flux_path: "ComfyUI/models/checkpoints"
-  steps: 100  # Main generation steps (from your workflow)
+  steps: 100  # Main generation steps
   cfg_scale: 1.0  # FLUX requires cfg=1.0
   sampler: "euler"
-  scheduler: "simple"
+  scheduler: "beta"  # From Doctor.json - using beta scheduler
   denoise: 1.0
+  guidance: 2.5  # FluxGuidance from node 77
+
+# PuLID Settings
+pulid:
+  model: "pulid_flux_v0.9.1.safetensors"  # From Doctor.json node 23
+  weight: 1.0
+  start_at: 0.0
+  end_at: 1.0
 
 # Image Generation Settings
 image_settings:
@@ -16,24 +25,17 @@ image_settings:
   height: 1024
   batch_size: 1
 
-# Face Swap Settings (ReActor)
-face_swap:
-  enabled: true
-  blend_strength: 0.85
-  face_restore: true
-  upscale_visibility: 1.0
-
 # Upscale Settings
 upscale:
   enabled: true
-  scale: 2
-  model: "4x-UltraSharp.pth"
+  scale: 1.5  # From Doctor.json node 45
+  method: "bicubic"
 
 # Prompt Settings
 prompt_settings:
-  negative_prompt: "low quality, blurry, distorted, deformed, ugly, bad anatomy, duplicate, watermark, signature, text, jpeg artifacts, worst quality"
-  style_prefix: "Professional medical photography, high quality, photorealistic, detailed,"
-  
+  negative_prompt: ""  # Doctor.json uses empty negative prompt
+  style_prefix: "Transform the person in the image:"
+
 # Instagram Aesthetic Keywords
 instagram_style:
   lighting:
@@ -57,17 +59,20 @@ instagram_style:
     - "authentic moment"
     - "confident and warm"
 
-# Detail Enhancement (Fixes hands, stethoscopes, small objects)
+# Detail Enhancement (Fixes hands, faces)
 detail_enhancement:
-  enabled: true  # Set to false to use faster workflow without detailers
-  mode: "facedetailer"  # Options: "facedetailer" (recommended), "meshgraphormer", "basic", "none"
-  # FaceDetailer: Hand & face refinement with upscaling - best quality, +60s generation time
-  # MeshGraphormer: 3D hand mesh prediction - best quality, +30s generation time
-  # Basic: Simple hand detection - good quality, +20s generation time  
-  # None: No hand refinement - fastest, original quality
-  hand_detection_threshold: 0.5
-  hand_refinement_denoise: 0.5  # Higher = more aggressive fix, but may change style
-  face_refinement_denoise: 0.35  # Lower for subtle face improvements
+  enabled: true
+  mode: "facedetailer"
+  # Hand FaceDetailer (node 36) settings
+  hand_refinement_denoise: 0.25  # From Doctor.json node 36
+  hand_refinement_steps: 100
+  hand_guide_size: 1024
+  # Face FaceDetailer (node 73) settings  
+  face_refinement_denoise: 0.15  # From Doctor.json node 73
+  face_refinement_steps: 100
+  face_guide_size: 1024
+  # Final refinement KSampler (node 38)
+  final_denoise: 0.35  # From Doctor.json node 38
 
 # Paths
 paths:
@@ -76,3 +81,6 @@ paths:
   outputs: "outputs"
   workflows: "workflows"
 
+# Workflow to use
+workflow:
+  default: "Doctor.json"  # Use the Doctor.json workflow
