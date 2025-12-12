@@ -1,7 +1,7 @@
 {
   "3": {
     "inputs": {
-      "seed": 673956870577446,
+      "seed": 616446528120521,
       "steps": 100,
       "cfg": 1,
       "sampler_name": "euler",
@@ -12,7 +12,7 @@
         0
       ],
       "positive": [
-        "77",
+        "6",
         0
       ],
       "negative": [
@@ -42,7 +42,7 @@
   },
   "6": {
     "inputs": {
-      "text": "Transform the person in the image: Professional doctor sitting at mahogany desk reviewing documents, focused, soft window lighting. Maintain the person's face and identity. Close-up shot, professional medical photography, 8k resolution, photorealistic, highly detailed natural skin texture, shot on Sony A7R IV, 85mm lens, f/1.8, cinematic lighting, volumetric lighting, raw photo, uncompressed.",
+      "text": "Using the input doctor photo as reference, create a clean, high-resolution portrait of the same doctor in a well-fitted, professional suit (navy or charcoal with a light shirt), framed from chest up. The doctor is standing in front of a softly blurred modern clinic atrium with natural light and muted architectural tones. Keep the doctor’s face, skin tone, and expression unchanged; only enhance lighting and clarity. The overall look should be professional, friendly, and trustworthy, with a subtle leadership presence.",
       "clip": [
         "15",
         0
@@ -55,7 +55,7 @@
   },
   "7": {
     "inputs": {
-      "text": "",
+      "text": "smooth skin, text, watermark, bokeh",
       "clip": [
         "15",
         0
@@ -86,7 +86,7 @@
     "inputs": {
       "filename_prefix": "ComfyUI",
       "images": [
-        "41",
+        "90",
         0
       ]
     },
@@ -97,7 +97,7 @@
   },
   "11": {
     "inputs": {
-      "image": "Venugopal1.jpeg"
+      "image": "Screenshot 2025-12-11 at 2.25.45 PM.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -127,11 +127,11 @@
   },
   "22": {
     "inputs": {
-      "weight": 1,
+      "weight": 0.85,
       "start_at": 0,
       "end_at": 1,
       "model": [
-        "76",
+        "80",
         0
       ],
       "pulid_flux": [
@@ -199,7 +199,7 @@
   },
   "27": {
     "inputs": {
-      "image": "Venugopal2.jpeg"
+      "image": "Screenshot 2025-12-11 at 2.25.48 PM.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -208,7 +208,7 @@
   },
   "28": {
     "inputs": {
-      "image": "Venugopal3.jpg"
+      "image": "Screenshot 2025-12-11 at 2.25.39 PM.png"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -235,7 +235,7 @@
     "inputs": {
       "target_width": 1024,
       "target_height": 1024,
-      "padding_color": "white",
+      "padding_color": "black",
       "interpolation": "area",
       "image": [
         "11",
@@ -251,7 +251,7 @@
     "inputs": {
       "target_width": 1024,
       "target_height": 1024,
-      "padding_color": "white",
+      "padding_color": "black",
       "interpolation": "area",
       "image": [
         "27",
@@ -267,7 +267,7 @@
     "inputs": {
       "target_width": 1024,
       "target_height": 1024,
-      "padding_color": "white",
+      "padding_color": "black",
       "interpolation": "area",
       "image": [
         "28",
@@ -281,7 +281,7 @@
   },
   "35": {
     "inputs": {
-      "model_name": "bbox/hand_yolov8s.pt"
+      "model_name": "bbox/hand_yolov9c.pt"
     },
     "class_type": "UltralyticsDetectorProvider",
     "_meta": {
@@ -293,8 +293,8 @@
       "guide_size": 1024,
       "guide_size_for": true,
       "max_size": 1024,
-      "seed": 200382634081350,
-      "steps": 100,
+      "seed": 401200979297998,
+      "steps": 50,
       "cfg": 1,
       "sampler_name": "euler",
       "scheduler": "simple",
@@ -335,7 +335,7 @@
         0
       ],
       "positive": [
-        "77",
+        "6",
         0
       ],
       "negative": [
@@ -352,93 +352,67 @@
       "title": "FaceDetailer"
     }
   },
-  "38": {
+  "76": {
     "inputs": {
-      "seed": 933770780672364,
-      "steps": 100,
-      "cfg": 1,
-      "sampler_name": "euler",
-      "scheduler": "beta",
-      "denoise": 0.35,
+      "ckpt_name": "flux1-dev.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "Load Checkpoint"
+    }
+  },
+  "80": {
+    "inputs": {
+      "lora_name": "xlabs_flux_realism_lora.safetensors",
+      "strength_model": 0.5,
       "model": [
-        "22",
-        0
-      ],
-      "positive": [
-        "77",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "latent_image": [
-        "39",
+        "76",
         0
       ]
     },
-    "class_type": "KSampler",
+    "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "KSampler"
+      "title": "LoraLoaderModelOnly"
     }
   },
-  "39": {
+  "82": {
     "inputs": {
-      "pixels": [
-        "45",
+      "enabled": true,
+      "swap_model": "inswapper_128.onnx",
+      "facedetection": "retinaface_resnet50",
+      "face_restore_model": "none",
+      "face_restore_visibility": 1,
+      "codeformer_weight": 0.5,
+      "detect_gender_input": "no",
+      "detect_gender_source": "no",
+      "input_faces_index": "0",
+      "source_faces_index": "0",
+      "console_log_level": 1,
+      "input_image": [
+        "36",
         0
       ],
-      "vae": [
-        "19",
+      "source_image": [
+        "29",
         0
       ]
     },
-    "class_type": "VAEEncode",
+    "class_type": "ReActorFaceSwap",
     "_meta": {
-      "title": "VAE Encode"
+      "title": "ReActor 🌌 Fast Face Swap"
     }
   },
-  "41": {
-    "inputs": {
-      "samples": [
-        "38",
-        0
-      ],
-      "vae": [
-        "19",
-        0
-      ]
-    },
-    "class_type": "VAEDecode",
-    "_meta": {
-      "title": "VAE Decode"
-    }
-  },
-  "45": {
-    "inputs": {
-      "upscale_method": "bicubic",
-      "scale_by": 1.5,
-      "image": [
-        "73",
-        0
-      ]
-    },
-    "class_type": "ImageScaleBy",
-    "_meta": {
-      "title": "Upscale Image By"
-    }
-  },
-  "73": {
+  "86": {
     "inputs": {
       "guide_size": 1024,
       "guide_size_for": true,
       "max_size": 1024,
-      "seed": 65845373742056,
-      "steps": 100,
+      "seed": 1002567398531844,
+      "steps": 200,
       "cfg": 1,
       "sampler_name": "euler",
       "scheduler": "simple",
-      "denoise": 0.15,
+      "denoise": 0.66,
       "feather": 5,
       "noise_mask": true,
       "force_inpaint": true,
@@ -459,7 +433,7 @@
       "tiled_encode": false,
       "tiled_decode": false,
       "image": [
-        "36",
+        "82",
         0
       ],
       "model": [
@@ -475,7 +449,7 @@
         0
       ],
       "positive": [
-        "77",
+        "6",
         0
       ],
       "negative": [
@@ -483,7 +457,7 @@
         0
       ],
       "bbox_detector": [
-        "74",
+        "87",
         0
       ]
     },
@@ -492,7 +466,7 @@
       "title": "FaceDetailer"
     }
   },
-  "74": {
+  "87": {
     "inputs": {
       "model_name": "bbox/face_yolov8m.pt"
     },
@@ -501,26 +475,18 @@
       "title": "UltralyticsDetectorProvider"
     }
   },
-  "76": {
+  "90": {
     "inputs": {
-      "ckpt_name": "flux1-krea-dev.safetensors"
-    },
-    "class_type": "CheckpointLoaderSimple",
-    "_meta": {
-      "title": "Load Checkpoint"
-    }
-  },
-  "77": {
-    "inputs": {
-      "guidance": 2.5,
-      "conditioning": [
-        "6",
+      "upscale_method": "bicubic",
+      "scale_by": 2,
+      "image": [
+        "86",
         0
       ]
     },
-    "class_type": "FluxGuidance",
+    "class_type": "ImageScaleBy",
     "_meta": {
-      "title": "FluxGuidance"
+      "title": "Upscale Image By"
     }
   }
 }

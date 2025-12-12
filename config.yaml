@@ -1,21 +1,25 @@
 # Doctor Image Generator Configuration
-# Updated to match Doctor.json workflow
+# Updated to match Doctor.json workflow (December 2025)
 
 # Model Settings
 model_settings:
-  flux_model: "flux1-krea-dev.safetensors"  # From Doctor.json node 76
+  flux_model: "flux1-dev.safetensors"  # From Doctor.json node 76
   flux_path: "ComfyUI/models/checkpoints"
   steps: 100  # Main generation steps
   cfg_scale: 1.0  # FLUX requires cfg=1.0
   sampler: "euler"
   scheduler: "beta"  # From Doctor.json - using beta scheduler
   denoise: 1.0
-  guidance: 2.5  # FluxGuidance from node 77
+
+# LoRA Settings
+lora:
+  name: "xlabs_flux_realism_lora.safetensors"  # From Doctor.json node 80
+  strength: 0.5
 
 # PuLID Settings
 pulid:
   model: "pulid_flux_v0.9.1.safetensors"  # From Doctor.json node 23
-  weight: 1.0
+  weight: 0.85  # From Doctor.json node 22
   start_at: 0.0
   end_at: 1.0
 
@@ -28,36 +32,13 @@ image_settings:
 # Upscale Settings
 upscale:
   enabled: true
-  scale: 1.5  # From Doctor.json node 45
+  scale: 2.0  # From Doctor.json node 90 - 2x upscale
   method: "bicubic"
 
-# Prompt Settings
-prompt_settings:
-  negative_prompt: ""  # Doctor.json uses empty negative prompt
-  style_prefix: "Transform the person in the image:"
-
-# Instagram Aesthetic Keywords
-instagram_style:
-  lighting:
-    - "soft studio lighting"
-    - "golden hour lighting"
-    - "natural window light"
-    - "cinematic lighting"
-    - "professional lighting"
-  
-  camera:
-    - "shot on Sony A7R IV"
-    - "85mm lens"
-    - "f/1.8 aperture"
-    - "bokeh background"
-    - "shallow depth of field"
-  
-  vibe:
-    - "candid"
-    - "professional yet approachable"
-    - "medical lifestyle photography"
-    - "authentic moment"
-    - "confident and warm"
+# Default Prompts
+default_prompts:
+  positive: "Using the input doctor photo as reference, create a clean, high-resolution portrait of the same doctor in a well-fitted, professional suit (navy or charcoal with a light shirt), framed from chest up. The doctor is standing in front of a softly blurred modern clinic atrium with natural light and muted architectural tones. Keep the doctor's face, skin tone, and expression unchanged; only enhance lighting and clarity. The overall look should be professional, friendly, and trustworthy, with a subtle leadership presence."
+  negative: "smooth skin, text, watermark, bokeh"
 
 # Detail Enhancement (Fixes hands, faces)
 detail_enhancement:
@@ -65,14 +46,21 @@ detail_enhancement:
   mode: "facedetailer"
   # Hand FaceDetailer (node 36) settings
   hand_refinement_denoise: 0.25  # From Doctor.json node 36
-  hand_refinement_steps: 100
+  hand_refinement_steps: 50
   hand_guide_size: 1024
-  # Face FaceDetailer (node 73) settings  
-  face_refinement_denoise: 0.15  # From Doctor.json node 73
-  face_refinement_steps: 100
+  hand_detector: "bbox/hand_yolov9c.pt"
+  # Face FaceDetailer (node 86) settings  
+  face_refinement_denoise: 0.66  # From Doctor.json node 86
+  face_refinement_steps: 200
   face_guide_size: 1024
-  # Final refinement KSampler (node 38)
-  final_denoise: 0.35  # From Doctor.json node 38
+  face_detector: "bbox/face_yolov8m.pt"
+
+# ReActor Face Swap Settings
+reactor:
+  enabled: true
+  swap_model: "inswapper_128.onnx"
+  facedetection: "retinaface_resnet50"
+  face_restore_model: "none"
 
 # Paths
 paths:

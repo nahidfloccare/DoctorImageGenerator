@@ -457,16 +457,36 @@
                         <div class="example-prompts">
                             <h4>💡 Example Prompts (click to use):</h4>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Professional doctor in dark suit, standing in modern clinic atrium, natural lighting,
-                                confident smile, chest-up framing
+                                Using the input doctor photo as reference, create a clean, high-resolution portrait of
+                                the same doctor in a well-fitted, professional suit (navy or charcoal with a light
+                                shirt), framed from chest up. The doctor is standing in front of a softly blurred modern
+                                clinic atrium with natural light and muted architectural tones. Keep the doctor's face,
+                                skin tone, and expression unchanged; only enhance lighting and clarity. The overall look
+                                should be professional, friendly, and trustworthy, with a subtle leadership presence.
                             </div>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Doctor in tailored scrubs, consulting with patient, modern examination room, warm
-                                professional lighting
+                                Using the input doctor photo as reference, create a photorealistic portrait of the same
+                                doctor wearing tailored medical scrubs in a modern examination room. Natural window
+                                lighting illuminates the scene, with medical equipment softly blurred in the background.
+                                The doctor has a warm, approachable expression while maintaining professional authority.
+                                Maintain exact facial features, skin texture, and natural appearance. Shot on Sony A7R
+                                IV, 85mm lens, f/2.0, cinematic color grading.
                             </div>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Close-up portrait of doctor in dark grey blazer, softly blurred office background, warm
-                                inviting tones
+                                Using the input doctor photo as reference, create an Instagram-style portrait of the
+                                same doctor in a dark grey premium blazer over a crisp white shirt, posed confidently
+                                with arms crossed. Softly blurred upscale medical office background with warm ambient
+                                lighting. Maintain the doctor's exact facial features and natural skin texture.
+                                Professional headshot composition, chest-up framing, warm inviting tones, subtle depth
+                                of field, 8K resolution.
+                            </div>
+                            <div class="example-prompt" onclick="setPrompt(this)">
+                                Using the input doctor photo as reference, create a lifestyle portrait of the same
+                                doctor in smart casual attire (fitted polo shirt, navy) standing in a bright, modern
+                                wellness clinic lobby. Large windows provide natural golden hour lighting. The doctor
+                                appears relaxed yet confident, with a genuine smile. Preserve all facial characteristics
+                                and skin details. Editorial photography style, warm color palette, sharp focus on face
+                                with soft bokeh background.
                             </div>
                         </div>
                     </div>
@@ -474,8 +494,8 @@
                     <div class="form-group">
                         <label for="negativePrompt">Negative Prompt (optional)</label>
                         <textarea id="negativePrompt" name="negative_prompt" rows="2"
-                            placeholder="Elements to avoid in the image..."></textarea>
-                        <p class="hint">Default: low quality, blurry, distorted, deformed, stethoscope, text, watermark
+                            placeholder="Elements to avoid in the image...">smooth skin, text, watermark, bokeh</textarea>
+                        <p class="hint">Tip: Keep minimal for best results. Default: smooth skin, text, watermark, bokeh
                         </p>
                     </div>
 
@@ -667,7 +687,9 @@
         }
 
         function setPrompt(element) {
-            document.getElementById('positivePrompt').value = element.textContent.trim();
+            // Normalize whitespace: replace multiple spaces/newlines with single space
+            const text = element.textContent.replace(/\s+/g, ' ').trim();
+            document.getElementById('positivePrompt').value = text;
         }
 
         function showAlert(message, type = 'error') {
