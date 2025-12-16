@@ -609,21 +609,47 @@
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
 
-        let eventSource = null;
-        let progressInterval = null;
+        // State management for mobile-friendly polling
+        let currentJobId = null;
+        let pollInterval = null;
+        let isPolling = false;
 
-        // Progress simulation for better UX
-        const progressStages = [
-            { percent: 5, text: 'Loading PuLID model...', step: 1 },
-            { percent: 15, text: 'Analyzing face identity...', step: 1 },
-            { percent: 25, text: 'Starting main generation (100 steps)...', step: 2 },
-            { percent: 40, text: 'Generating image...', step: 2 },
-            { percent: 55, text: 'Detecting and refining hands...', step: 3 },
-            { percent: 65, text: 'Hand detailing (50 steps)...', step: 3 },
-            { percent: 75, text: 'Upscaling image (4x)...', step: 4 },
-            { percent: 85, text: 'Final refinement pass...', step: 4 },
-            { percent: 95, text: 'Saving and processing...', step: 5 }
-        ];
+        // Persist job ID in sessionStorage for tab recovery
+        const STORAGE_KEY = 'kol_current_job';
+
+        function saveJobToStorage(jobId) {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+                jobId: jobId,
+                timestamp: Date.now()
+            }));
+        }
+
+        function getJobFromStorage() {
+            try {
+                const data = sessionStorage.getItem(STORAGE_KEY);
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    // Only restore if less than 10 minutes old
+                    if (Date.now() - parsed.timestamp < 600000) {
+                        return parsed.jobId;
+                    }
+                }
+            } catch (e) { }
+            return null;
+        }
+
+        function clearJobFromStorage() {
+            sessionStorage.removeItem(STORAGE_KEY);
+        }
+
+        // Map progress percentage to step number
+        function getStepFromProgress(progress) {
+            if (progress < 15) return 1;      // PuLID
+            if (progress < 50) return 2;      // Generate
+            if (progress < 75) return 3;      // Refine
+            if (progress < 95) return 4;      // Upscale
+            return 5;                          // Finish
+        }
 
         function resetProgressSteps() {
             for (let i = 1; i <= 5; i++) {
@@ -643,50 +669,148 @@
                     step.classList.remove('active');
                     step.classList.add('completed');
                     step.querySelector('.step-icon').innerHTML = '<i data-lucide="check" style="width:14px;height:14px;"></i>';
-                    lucide.createIcons();
                 }
             }
             // Mark current step as active
             const currentStep = document.getElementById('step' + stepNum);
             if (currentStep) {
+                currentStep.classList.remove('completed');
                 currentStep.classList.add('active');
             }
+            // Re-render icons
+            lucide.createIcons();
         }
 
-        function startProgressSimulation() {
-            let stageIndex = 0;
-            const totalTime = 180000; // ~3 minutes total expected
-            const intervalTime = totalTime / progressStages.length;
-
-            progressInterval = setInterval(() => {
-                if (stageIndex < progressStages.length) {
-                    const stage = progressStages[stageIndex];
-                    progressBar.style.width = stage.percent + '%';
-                    progressBar.textContent = stage.percent + '%';
-                    progressText.textContent = stage.text;
-                    updateProgressStep(stage.step);
-                    stageIndex++;
-                }
-            }, intervalTime);
+        function updateProgress(progress, stage) {
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = progress + '%';
+            progressText.textContent = stage || 'Processing...';
+            updateProgressStep(getStepFromProgress(progress));
         }
 
-        function stopProgressSimulation(success = true) {
-            if (progressInterval) {
-                clearInterval(progressInterval);
-                progressInterval = null;
-            }
-            if (success) {
-                progressBar.style.width = '100%';
-                progressBar.textContent = '100%';
-                progressText.textContent = 'Complete!';
-                updateProgressStep(5);
-                const step5 = document.getElementById('step5');
+        function showComplete() {
+            progressBar.style.width = '100%';
+            progressBar.textContent = '100%';
+            progressText.textContent = 'Complete!';
+            updateProgressStep(5);
+            const step5 = document.getElementById('step5');
+            if (step5) {
                 step5.classList.remove('active');
                 step5.classList.add('completed');
                 step5.querySelector('.step-icon').innerHTML = '<i data-lucide="check" style="width:14px;height:14px;"></i>';
                 lucide.createIcons();
             }
         }
+
+        // Mobile-friendly polling with visibility API
+        async function pollJobStatus(jobId) {
+            if (!jobId || isPolling) return;
+            
+            isPolling = true;
+            currentJobId = jobId;
+            saveJobToStorage(jobId);
+
+            const poll = async () => {
+                try {
+                    const response = await fetch(`/api/job/${jobId}`);
+                    const data = await response.json();
+
+                    if (data.error && response.status === 404) {
+                        // Job not found - might have expired
+                        stopPolling();
+                        showAlert('Job not found. Please try again.', 'error');
+                        resetUI();
+                        return;
+                    }
+
+                    // Update progress UI
+                    updateProgress(data.progress || 0, data.stage || 'Processing...');
+
+                    if (data.status === 'completed') {
+                        // Success!
+                        stopPolling();
+                        showComplete();
+                        
+                        if (data.result) {
+                            resultImage.src = data.result.image_url;
+                            downloadBtn.href = data.result.image_url;
+                            resultContainer.style.display = 'block';
+                            showAlert(data.result.message || 'Image generated successfully!', 'success');
+                        }
+                        
+                        setTimeout(() => {
+                            loadingIndicator.classList.remove('active');
+                            resetUI();
+                        }, 1000);
+                        
+                    } else if (data.status === 'error') {
+                        // Error
+                        stopPolling();
+                        showAlert(data.error || 'Generation failed', 'error');
+                        placeholderText.style.display = 'block';
+                        loadingIndicator.classList.remove('active');
+                        resetUI();
+                        
+                    } else {
+                        // Still processing - continue polling
+                        // Use shorter interval when tab is visible
+                        const interval = document.hidden ? 5000 : 2000;
+                        pollInterval = setTimeout(poll, interval);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    // On network error, keep trying (important for mobile)
+                    const retryInterval = document.hidden ? 10000 : 3000;
+                    pollInterval = setTimeout(poll, retryInterval);
+                }
+            };
+
+            // Start polling
+            poll();
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearTimeout(pollInterval);
+                pollInterval = null;
+            }
+            isPolling = false;
+            currentJobId = null;
+            clearJobFromStorage();
+        }
+
+        function resetUI() {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i data-lucide="wand-2"></i> <span>Generate Image</span>';
+            lucide.createIcons();
+        }
+
+        // Handle page visibility changes (crucial for mobile)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && currentJobId && !pollInterval) {
+                // Tab became visible and we have an active job - resume polling
+                console.log('Tab visible, resuming polling for job:', currentJobId);
+                pollJobStatus(currentJobId);
+            }
+        });
+
+        // Restore job on page load (handles mobile tab kill/restore)
+        window.addEventListener('load', () => {
+            const savedJobId = getJobFromStorage();
+            if (savedJobId) {
+                console.log('Restoring job from storage:', savedJobId);
+                // Show loading state
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Resuming...</span>';
+                lucide.createIcons();
+                loadingIndicator.classList.add('active');
+                placeholderText.style.display = 'none';
+                resetProgressSteps();
+                
+                // Resume polling
+                pollJobStatus(savedJobId);
+            }
+        });
 
         // Upload area click
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -739,38 +863,12 @@
             lucide.createIcons();
         }
 
-        function connectProgressStream(sessionId) {
-            if (eventSource) {
-                eventSource.close();
-            }
-
-            eventSource = new EventSource(`/api/progress/${sessionId}`);
-
-            eventSource.onmessage = function (event) {
-                const data = JSON.parse(event.data);
-
-                if (data.type === 'progress') {
-                    const percentage = data.percentage || 0;
-                    progressBar.style.width = percentage + '%';
-                    progressBar.textContent = percentage + '%';
-                    progressText.textContent = `Processing... ${data.value}/${data.max} steps`;
-                } else if (data.type === 'complete') {
-                    progressBar.style.width = '100%';
-                    progressBar.textContent = '100%';
-                    progressText.textContent = 'Finalizing...';
-                    eventSource.close();
-                }
-            };
-
-            eventSource.onerror = function (error) {
-                console.error('Progress stream error:', error);
-                eventSource.close();
-            };
-        }
-
-        // Form submission
+        // Form submission - now uses async job queue
         generateForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Stop any existing polling
+            stopPolling();
 
             const formData = new FormData(generateForm);
 
@@ -785,31 +883,23 @@
                 return;
             }
 
-            // Generate session ID
-            const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
             // Show loading
             generateBtn.disabled = true;
-            generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Generating... (~2 minutes)</span>';
+            generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Submitting...</span>';
             lucide.createIcons();
             loadingIndicator.classList.add('active');
             resultContainer.style.display = 'none';
             placeholderText.style.display = 'none';
-            alertContainer.innerHTML = ''; // Clear previous messages
+            alertContainer.innerHTML = '';
 
-            // Reset progress bar and steps
+            // Reset progress
             progressBar.style.width = '0%';
             progressBar.textContent = '0%';
-            progressText.textContent = 'Initializing...';
+            progressText.textContent = 'Submitting job...';
             resetProgressSteps();
 
-            // Start simulated progress
-            startProgressSimulation();
-
-            // Start progress tracking (we'll connect after getting response)
-            let progressConnected = false;
-
             try {
+                // Submit job (returns immediately)
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     body: formData
@@ -817,47 +907,40 @@
 
                 const data = await response.json();
 
-                // Connect to progress stream if we have a session ID
-                if (data.session_id && !progressConnected) {
-                    connectProgressStream(data.session_id);
-                    progressConnected = true;
+                if (data.status === 'accepted' && data.job_id) {
+                    // Job submitted - start polling
+                    generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Generating... (~2 min)</span>';
+                    lucide.createIcons();
+                    progressText.textContent = 'Job started...';
+                    
+                    // Start polling for status
+                    pollJobStatus(data.job_id);
+                    
+                } else if (data.error) {
+                    // Immediate error (validation, etc.)
+                    showAlert(data.error);
+                    placeholderText.style.display = 'block';
+                    loadingIndicator.classList.remove('active');
+                    resetUI();
                 }
 
-                if (data.status === 'success') {
-                    stopProgressSimulation(true);
-                    resultImage.src = data.image_url;
-                    downloadBtn.href = data.image_url;
-                    resultContainer.style.display = 'block';
-                    showAlert(data.message || 'Image generated successfully!', 'success');
-                } else {
-                    stopProgressSimulation(false);
-                    showAlert(data.error || 'Generation failed');
-                    placeholderText.style.display = 'block';
-                }
             } catch (error) {
-                stopProgressSimulation(false);
                 showAlert('Network error: ' + error.message);
                 placeholderText.style.display = 'block';
-            } finally {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '<i data-lucide="wand-2"></i> <span>Generate Image</span>';
-                lucide.createIcons();
-
-                // Delay hiding loading indicator to show 100% completion
-                setTimeout(() => {
-                    loadingIndicator.classList.remove('active');
-                }, 1000);
-
-                if (eventSource) {
-                    eventSource.close();
-                }
+                loadingIndicator.classList.remove('active');
+                resetUI();
             }
         });
 
         // Check server health on load
         fetch('/api/health')
             .then(res => res.json())
-            .then(data => console.log('Server status:', data))
+            .then(data => {
+                console.log('Server status:', data);
+                if (data.mobile_optimized) {
+                    console.log('✓ Mobile-optimized mode enabled');
+                }
+            })
             .catch(err => console.error('Server not responding:', err));
     </script>
 
