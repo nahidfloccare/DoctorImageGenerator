@@ -1,7 +1,7 @@
 """
 Doctor Image Generator - Python API
 Main interface for generating photorealistic doctor images using FLUX + PuLID
-Updated to use Doctor.json workflow
+Updated to use Doctor.json workflow with REAL1SM refinement
 """
 
 import os
@@ -21,7 +21,7 @@ from prompts.templates import build_prompt, get_scenario_list, SCENARIOS
 class DoctorImageGenerator:
     """
     Main class for generating doctor images using ComfyUI backend
-    Uses Doctor.json workflow with FLUX-Krea + PuLID + FaceDetailer
+    Uses Doctor.json workflow with FLUX + PuLID + FaceDetailer + REAL1SM refinement
     """
     
     def __init__(self, 
@@ -95,7 +95,7 @@ class DoctorImageGenerator:
         except Exception as e:
             raise RuntimeError(f"Failed to get history: {e}")
     
-    def _wait_for_completion(self, prompt_id: str, timeout: int = 600) -> dict:
+    def _wait_for_completion(self, prompt_id: str, timeout: int = 900) -> dict:
         """Wait for prompt to complete and return results"""
         start_time = time.time()
         
@@ -139,21 +139,27 @@ class DoctorImageGenerator:
         """
         Update Doctor.json workflow with specific parameters
         
-        Current Workflow Structure (Updated):
+        Current Workflow Structure (December 2025 - No LoRA):
         - Node 76: CheckpointLoaderSimple (flux1-dev.safetensors)
-        - Node 80: LoraLoaderModelOnly (xlabs_flux_realism_lora.safetensors)
         - Node 23: PulidFluxModelLoader (pulid_flux_v0.9.1.safetensors)
-        - Node 22: ApplyPulidFlux (weight=0.85)
+        - Node 22: ApplyPulidFlux (weight=0.85, connects directly to checkpoint)
         - Node 6: CLIPTextEncode (positive prompt)
         - Node 7: CLIPTextEncode (negative prompt)
         - Node 11, 27, 28: LoadImage (reference images)
         - Node 3: KSampler (main generation, 100 steps, denoise=1.0, scheduler=beta)
         - Node 35: UltralyticsDetectorProvider (hand_yolov9c.pt)
         - Node 36: FaceDetailer (hands, denoise=0.25, 50 steps)
-        - Node 82: ReActorFaceSwap (face swap)
+        - Node 105: FreeMemoryImage (after hands)
+        - Node 82: ReActorFaceSwap (face swap with CodeFormer)
         - Node 87: UltralyticsDetectorProvider (face_yolov8m.pt)
-        - Node 86: FaceDetailer (face refinement, denoise=0.66, 200 steps)
-        - Node 90: ImageScaleBy (upscale 2x bicubic)
+        - Node 86: FaceDetailer (face refinement, denoise=0.66, 150 steps, beta scheduler)
+        - Node 91: CheckpointLoaderSimple (REAL1SM_V3_FP8.safetensors)
+        - Node 99: VAEEncode (encode for refinement)
+        - Node 101: KSampler (REAL1SM refinement, 30 steps, denoise=0.3, karras)
+        - Node 100: VAEDecode (decode refinement)
+        - Node 90: ImageScaleBy (upscale 4x bicubic)
+        - Node 104: FreeMemoryImage (before save)
+        - Node 9: SaveImage
         """
         import random
         import shutil
@@ -161,20 +167,32 @@ class DoctorImageGenerator:
         model_settings = self.config.get("model_settings", {})
         detail_config = self.config.get("detail_enhancement", {})
         pulid_config = self.config.get("pulid", {})
+        lora_config = self.config.get("lora", {})
+        reactor_config = self.config.get("reactor", {})
+        refinement_config = self.config.get("refinement", {})
+        upscale_config = self.config.get("upscale", {})
         
         for node_id, node in workflow.items():
             node_type = node.get("class_type", "")
             
-            # Checkpoint Loader - Use flux1-dev
-            if node_type == "CheckpointLoaderSimple":
+            # Main Flux Checkpoint Loader (Node 76)
+            if node_type == "CheckpointLoaderSimple" and node_id == "76":
                 node["inputs"]["ckpt_name"] = model_settings.get("flux_model", "flux1-dev.safetensors")
-                print(f"   ✓ Checkpoint: {node['inputs']['ckpt_name']}")
+                print(f"   ✓ Flux Checkpoint: {node['inputs']['ckpt_name']}")
             
-            # LoRA Loader (Node 80)
+            # REAL1SM Refinement Checkpoint Loader (Node 91)
+            elif node_type == "CheckpointLoaderSimple" and node_id == "91":
+                node["inputs"]["ckpt_name"] = refinement_config.get("model", "REAL1SM_V3_FP8.safetensors")
+                print(f"   ✓ Refinement Checkpoint: {node['inputs']['ckpt_name']}")
+            
+            # LoRA Loader (Node 80) - Optional, may not exist in workflow
             elif node_type == "LoraLoaderModelOnly":
-                node["inputs"]["lora_name"] = "xlabs_flux_realism_lora.safetensors"
-                node["inputs"]["strength_model"] = 0.5
-                print(f"   ✓ LoRA: {node['inputs']['lora_name']} @ {node['inputs']['strength_model']}")
+                if lora_config.get("enabled", False):
+                    node["inputs"]["lora_name"] = lora_config.get("name", "UltraRealistic_v2.safetensors")
+                    node["inputs"]["strength_model"] = lora_config.get("strength", 0.5)
+                    print(f"   ✓ LoRA: {node['inputs']['lora_name']} @ {node['inputs']['strength_model']}")
+                else:
+                    print(f"   ℹ LoRA node found but disabled in config")
             
             # CLIP Loaders
             elif node_type == "DualCLIPLoader":
@@ -228,6 +246,16 @@ class DoctorImageGenerator:
                 node["inputs"]["seed"] = random.randint(100000, 999999999999)
                 print(f"   ✓ Main KSampler: {node['inputs']['steps']} steps, {node['inputs']['scheduler']} scheduler")
             
+            # REAL1SM Refinement KSampler (Node 101)
+            elif node_type == "KSampler" and node_id == "101":
+                node["inputs"]["steps"] = refinement_config.get("steps", 30)
+                node["inputs"]["cfg"] = refinement_config.get("cfg", 1.0)
+                node["inputs"]["sampler_name"] = refinement_config.get("sampler", "euler")
+                node["inputs"]["scheduler"] = refinement_config.get("scheduler", "karras")
+                node["inputs"]["denoise"] = refinement_config.get("denoise", 0.3)
+                node["inputs"]["seed"] = random.randint(100000, 999999999999)
+                print(f"   ✓ Refinement KSampler: {node['inputs']['steps']} steps, denoise={node['inputs']['denoise']}")
+            
             # Hand FaceDetailer (Node 36) - denoise=0.25, 50 steps
             elif node_type == "FaceDetailer" and node_id == "36":
                 node["inputs"]["seed"] = random.randint(100000, 999999999999)
@@ -241,35 +269,36 @@ class DoctorImageGenerator:
                 node["inputs"]["bbox_crop_factor"] = 3.0
                 print(f"   ✓ Hand FaceDetailer: denoise={node['inputs']['denoise']}, {node['inputs']['steps']} steps")
             
-            # Face FaceDetailer (Node 86) - denoise=0.66, 200 steps
+            # Face FaceDetailer (Node 86) - denoise=0.66, 150 steps, beta scheduler
             elif node_type == "FaceDetailer" and node_id == "86":
                 node["inputs"]["seed"] = random.randint(100000, 999999999999)
-                node["inputs"]["steps"] = detail_config.get("face_refinement_steps", 200)
+                node["inputs"]["steps"] = detail_config.get("face_refinement_steps", 150)
                 node["inputs"]["cfg"] = 1.0
                 node["inputs"]["sampler_name"] = "euler"
-                node["inputs"]["scheduler"] = "simple"
+                node["inputs"]["scheduler"] = detail_config.get("face_scheduler", "beta")
                 node["inputs"]["denoise"] = detail_config.get("face_refinement_denoise", 0.66)
                 node["inputs"]["guide_size"] = detail_config.get("face_guide_size", 1024)
                 node["inputs"]["bbox_threshold"] = 0.5
                 node["inputs"]["bbox_crop_factor"] = 3.0
-                print(f"   ✓ Face FaceDetailer: denoise={node['inputs']['denoise']}, {node['inputs']['steps']} steps")
+                print(f"   ✓ Face FaceDetailer: denoise={node['inputs']['denoise']}, {node['inputs']['steps']} steps, {node['inputs']['scheduler']} scheduler")
             
             # ReActorFaceSwap (Node 82)
             elif node_type == "ReActorFaceSwap":
                 node["inputs"]["enabled"] = True
-                node["inputs"]["swap_model"] = "inswapper_128.onnx"
-                node["inputs"]["facedetection"] = "retinaface_resnet50"
-                node["inputs"]["face_restore_model"] = "none"
-                print(f"   ✓ ReActor: swap_model={node['inputs']['swap_model']}")
+                node["inputs"]["swap_model"] = reactor_config.get("swap_model", "inswapper_128.onnx")
+                node["inputs"]["facedetection"] = reactor_config.get("facedetection", "retinaface_resnet50")
+                node["inputs"]["face_restore_model"] = reactor_config.get("face_restore_model", "codeformer-v0.1.0.pth")
+                node["inputs"]["codeformer_weight"] = reactor_config.get("codeformer_weight", 0.5)
+                print(f"   ✓ ReActor: {node['inputs']['swap_model']}, restore={node['inputs']['face_restore_model']}")
             
             # Hand Detector Provider (Node 35)
             elif node_type == "UltralyticsDetectorProvider" and node_id == "35":
-                node["inputs"]["model_name"] = "bbox/hand_yolov9c.pt"
+                node["inputs"]["model_name"] = detail_config.get("hand_detector", "bbox/hand_yolov9c.pt")
                 print(f"   ✓ Hand detector: {node['inputs']['model_name']}")
             
             # Face Detector Provider (Node 87)
             elif node_type == "UltralyticsDetectorProvider" and node_id == "87":
-                node["inputs"]["model_name"] = "bbox/face_yolov8m.pt"
+                node["inputs"]["model_name"] = detail_config.get("face_detector", "bbox/face_yolov8m.pt")
                 print(f"   ✓ Face detector: {node['inputs']['model_name']}")
             
             # Empty Latent Image
@@ -278,11 +307,15 @@ class DoctorImageGenerator:
                 node["inputs"]["height"] = self.config.get("image_settings", {}).get("height", 1024)
                 node["inputs"]["batch_size"] = 1
             
-            # Upscale settings (Node 90) - 2x bicubic
+            # Upscale settings (Node 90) - 4x bicubic
             elif node_type == "ImageScaleBy":
-                node["inputs"]["upscale_method"] = self.config.get("upscale", {}).get("method", "bicubic")
-                node["inputs"]["scale_by"] = self.config.get("upscale", {}).get("scale", 2.0)
+                node["inputs"]["upscale_method"] = upscale_config.get("method", "bicubic")
+                node["inputs"]["scale_by"] = upscale_config.get("scale", 4.0)
                 print(f"   ✓ Upscale: {node['inputs']['scale_by']}x {node['inputs']['upscale_method']}")
+            
+            # FreeMemoryImage nodes (104, 105) - no config needed, just pass-through
+            elif node_type == "FreeMemoryImage":
+                pass  # These nodes don't need configuration
         
         return workflow
     
@@ -363,8 +396,8 @@ class DoctorImageGenerator:
         print(f"📋 Prompt ID: {prompt_id}")
         
         # Wait for completion
-        print(f"⏳ Generating image (estimated 3-5 minutes)...")
-        history = self._wait_for_completion(prompt_id, timeout=600)
+        print(f"⏳ Generating image (estimated 5-10 minutes with refinement)...")
+        history = self._wait_for_completion(prompt_id, timeout=900)
         
         # Get output images
         outputs = history.get("outputs", {})
@@ -414,7 +447,8 @@ class DoctorImageGenerator:
                 "negative_prompt": negative_prompt,
                 "custom_prompt": custom_prompt,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "workflow": "Doctor.json"
+                "workflow": "Doctor.json",
+                "refinement_model": self.config.get("refinement", {}).get("model", "REAL1SM_V3_FP8.safetensors")
             }
         }
     

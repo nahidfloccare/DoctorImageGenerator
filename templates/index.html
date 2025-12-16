@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Image Generator - AI-Powered Professional Medical Photography</title>
+    <title>KOL Image Generator - AI-Powered Professional Photography</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -34,6 +36,10 @@
             font-size: 2.5rem;
             margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
 
         .header p {
@@ -42,12 +48,19 @@
         }
 
         .badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             background: rgba(255, 255, 255, 0.2);
             padding: 5px 15px;
             border-radius: 20px;
             margin: 10px 5px;
             font-size: 0.9rem;
+        }
+
+        .badge i {
+            width: 16px;
+            height: 16px;
         }
 
         .main-content {
@@ -74,6 +87,13 @@
             color: #333;
             margin-bottom: 20px;
             font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2 i {
+            color: #667eea;
         }
 
         .upload-area {
@@ -98,8 +118,13 @@
         }
 
         .upload-icon {
-            font-size: 3rem;
             margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .upload-icon i {
+            width: 48px;
+            height: 48px;
         }
 
         .file-input {
@@ -166,6 +191,10 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .generate-btn:hover:not(:disabled) {
@@ -193,6 +222,9 @@
             padding: 15px 20px;
             border-radius: 10px;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .alert-success {
@@ -282,6 +314,10 @@
             color: #666;
             font-size: 0.9rem;
             margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .progress-steps {
@@ -328,7 +364,6 @@
         .progress-step.completed .step-icon {
             background: #28a745;
             color: white;
-            margin: 0 auto 20px;
         }
 
         @keyframes spin {
@@ -339,34 +374,6 @@
             100% {
                 transform: rotate(360deg);
             }
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            background: #e0e0e0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px 0;
-            height: 30px;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-            width: 0%;
-        }
-
-        .progress-text {
-            margin-top: 10px;
-            color: #666;
-            font-size: 0.9rem;
         }
 
         .example-prompts {
@@ -380,6 +387,9 @@
             color: #667eea;
             margin-bottom: 10px;
             font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .example-prompt {
@@ -399,7 +409,9 @@
         }
 
         .download-btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             margin-top: 15px;
             padding: 12px 30px;
             background: #28a745;
@@ -414,31 +426,49 @@
             background: #218838;
             transform: translateY(-2px);
         }
+
+        .placeholder-icon {
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+
+        .loading-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏥 Doctor Image Generator</h1>
-            <p>AI-Powered Professional Medical Photography with PuLID + FaceDetailer</p>
+            <h1>
+                <i data-lucide="user"></i>
+                KOL Image Generator
+            </h1>
+            <p>AI-Powered Professional Photography with PuLID + FaceDetailer</p>
             <div>
-                <span class="badge">✨ Identity Preservation</span>
-                <span class="badge">🎨 Face & Hand Refinement</span>
-                <span class="badge">📸 Professional Quality</span>
+                <span class="badge"><i data-lucide="sparkles"></i> Identity Preservation</span>
+                <span class="badge"><i data-lucide="scan-face"></i> Face & Hand Refinement</span>
+                <span class="badge"><i data-lucide="camera"></i> Professional Quality</span>
             </div>
         </div>
 
         <div class="main-content">
             <!-- Left Panel: Input -->
             <div class="card">
-                <h2>📤 Upload & Configure</h2>
+                <h2><i data-lucide="upload"></i> Upload & Configure</h2>
 
                 <form id="generateForm">
                     <div class="form-group">
-                        <label>Doctor Reference Images (1-3)</label>
+                        <label>Reference Images (1-3)</label>
                         <div class="upload-area" id="uploadArea">
-                            <div class="upload-icon">📸</div>
+                            <div class="upload-icon">
+                                <i data-lucide="camera"></i>
+                            </div>
                             <p><strong>Click to upload</strong> or drag and drop</p>
                             <p class="hint">PNG, JPG, JPEG, WEBP (max 20MB per file)</p>
                         </div>
@@ -455,36 +485,36 @@
                         <p class="hint">Be specific about pose, attire, background, and lighting</p>
 
                         <div class="example-prompts">
-                            <h4>💡 Example Prompts (click to use):</h4>
+                            <h4><i data-lucide="lightbulb"></i> Example Prompts (click to use):</h4>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Using the input doctor photo as reference, create a clean, high-resolution portrait of
-                                the same doctor in a well-fitted, professional suit (navy or charcoal with a light
-                                shirt), framed from chest up. The doctor is standing in front of a softly blurred modern
-                                clinic atrium with natural light and muted architectural tones. Keep the doctor's face,
+                                Using the input photo as reference, create a clean, high-resolution portrait of
+                                the same person in a well-fitted, professional suit (navy or charcoal with a light
+                                shirt), framed from chest up. Standing in front of a softly blurred modern
+                                office atrium with natural light and muted architectural tones. Keep the face,
                                 skin tone, and expression unchanged; only enhance lighting and clarity. The overall look
                                 should be professional, friendly, and trustworthy, with a subtle leadership presence.
                             </div>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Using the input doctor photo as reference, create a photorealistic portrait of the same
-                                doctor wearing tailored medical scrubs in a modern examination room. Natural window
-                                lighting illuminates the scene, with medical equipment softly blurred in the background.
-                                The doctor has a warm, approachable expression while maintaining professional authority.
+                                Using the input photo as reference, create a photorealistic portrait of the same
+                                person wearing a tailored blazer in a modern conference room. Natural window
+                                lighting illuminates the scene, with minimalist decor softly blurred in the background.
+                                Warm, approachable expression while maintaining professional authority.
                                 Maintain exact facial features, skin texture, and natural appearance. Shot on Sony A7R
                                 IV, 85mm lens, f/2.0, cinematic color grading.
                             </div>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Using the input doctor photo as reference, create an Instagram-style portrait of the
-                                same doctor in a dark grey premium blazer over a crisp white shirt, posed confidently
-                                with arms crossed. Softly blurred upscale medical office background with warm ambient
-                                lighting. Maintain the doctor's exact facial features and natural skin texture.
+                                Using the input photo as reference, create an Instagram-style portrait of the
+                                same person in a dark grey premium blazer over a crisp white shirt, posed confidently
+                                with arms crossed. Softly blurred upscale office background with warm ambient
+                                lighting. Maintain exact facial features and natural skin texture.
                                 Professional headshot composition, chest-up framing, warm inviting tones, subtle depth
                                 of field, 8K resolution.
                             </div>
                             <div class="example-prompt" onclick="setPrompt(this)">
-                                Using the input doctor photo as reference, create a lifestyle portrait of the same
-                                doctor in smart casual attire (fitted polo shirt, navy) standing in a bright, modern
-                                wellness clinic lobby. Large windows provide natural golden hour lighting. The doctor
-                                appears relaxed yet confident, with a genuine smile. Preserve all facial characteristics
+                                Using the input photo as reference, create a lifestyle portrait of the same
+                                person in smart casual attire (fitted polo shirt, navy) standing in a bright, modern
+                                co-working space lobby. Large windows provide natural golden hour lighting. Appears
+                                relaxed yet confident, with a genuine smile. Preserve all facial characteristics
                                 and skin details. Editorial photography style, warm color palette, sharp focus on face
                                 with soft bokeh background.
                             </div>
@@ -500,20 +530,21 @@
                     </div>
 
                     <button type="submit" class="generate-btn" id="generateBtn">
-                        🎨 Generate Image
+                        <i data-lucide="wand-2"></i>
+                        <span>Generate Image</span>
                     </button>
                 </form>
             </div>
 
             <!-- Right Panel: Output -->
             <div class="card">
-                <h2>🖼️ Generated Image</h2>
+                <h2><i data-lucide="image"></i> Generated Image</h2>
 
                 <div id="alertContainer"></div>
 
                 <div class="loading" id="loadingIndicator">
                     <div class="spinner"></div>
-                    <p><strong>🎨 Generating your image...</strong></p>
+                    <p class="loading-title"><i data-lucide="wand-2"></i> Generating your image...</p>
                     <div class="progress-bar-container">
                         <div class="progress-bar" id="progressBar">0%</div>
                     </div>
@@ -544,13 +575,16 @@
 
                 <div class="result-container" id="resultContainer" style="display: none;">
                     <img id="resultImage" class="result-image" alt="Generated Image">
-                    <a href="#" id="downloadBtn" class="download-btn" download="generated_doctor_image.png">
-                        ⬇️ Download Image
+                    <a href="#" id="downloadBtn" class="download-btn" download="generated_kol_image.png">
+                        <i data-lucide="download"></i>
+                        <span>Download Image</span>
                     </a>
                 </div>
 
                 <div id="placeholderText" style="text-align: center; padding: 100px 20px; color: #999;">
-                    <p style="font-size: 3rem;">🎨</p>
+                    <div class="placeholder-icon">
+                        <i data-lucide="image" style="width: 64px; height: 64px;"></i>
+                    </div>
                     <p>Your generated image will appear here</p>
                 </div>
             </div>
@@ -558,6 +592,9 @@
     </div>
 
     <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const previewContainer = document.getElementById('previewContainer');
@@ -577,15 +614,15 @@
 
         // Progress simulation for better UX
         const progressStages = [
-            { percent: 5, text: '🔄 Loading PuLID model...', step: 1 },
-            { percent: 15, text: '🎭 Analyzing face identity...', step: 1 },
-            { percent: 25, text: '⚡ Starting main generation (100 steps)...', step: 2 },
-            { percent: 40, text: '🎨 Generating image...', step: 2 },
-            { percent: 55, text: '✋ Detecting and refining hands...', step: 3 },
-            { percent: 65, text: '🔍 Hand detailing (50 steps)...', step: 3 },
-            { percent: 75, text: '📐 Upscaling image (1.5x)...', step: 4 },
-            { percent: 85, text: '✨ Final refinement pass...', step: 4 },
-            { percent: 95, text: '💾 Saving and processing...', step: 5 }
+            { percent: 5, text: 'Loading PuLID model...', step: 1 },
+            { percent: 15, text: 'Analyzing face identity...', step: 1 },
+            { percent: 25, text: 'Starting main generation (100 steps)...', step: 2 },
+            { percent: 40, text: 'Generating image...', step: 2 },
+            { percent: 55, text: 'Detecting and refining hands...', step: 3 },
+            { percent: 65, text: 'Hand detailing (50 steps)...', step: 3 },
+            { percent: 75, text: 'Upscaling image (4x)...', step: 4 },
+            { percent: 85, text: 'Final refinement pass...', step: 4 },
+            { percent: 95, text: 'Saving and processing...', step: 5 }
         ];
 
         function resetProgressSteps() {
@@ -593,6 +630,7 @@
                 const step = document.getElementById('step' + i);
                 if (step) {
                     step.classList.remove('active', 'completed');
+                    step.querySelector('.step-icon').textContent = i;
                 }
             }
         }
@@ -604,7 +642,8 @@
                 if (step) {
                     step.classList.remove('active');
                     step.classList.add('completed');
-                    step.querySelector('.step-icon').textContent = '✓';
+                    step.querySelector('.step-icon').innerHTML = '<i data-lucide="check" style="width:14px;height:14px;"></i>';
+                    lucide.createIcons();
                 }
             }
             // Mark current step as active
@@ -639,11 +678,13 @@
             if (success) {
                 progressBar.style.width = '100%';
                 progressBar.textContent = '100%';
-                progressText.textContent = '✅ Complete!';
+                progressText.textContent = 'Complete!';
                 updateProgressStep(5);
-                document.getElementById('step5').classList.remove('active');
-                document.getElementById('step5').classList.add('completed');
-                document.getElementById('step5').querySelector('.step-icon').textContent = '✓';
+                const step5 = document.getElementById('step5');
+                step5.classList.remove('active');
+                step5.classList.add('completed');
+                step5.querySelector('.step-icon').innerHTML = '<i data-lucide="check" style="width:14px;height:14px;"></i>';
+                lucide.createIcons();
             }
         }
 
@@ -693,8 +734,9 @@
         }
 
         function showAlert(message, type = 'error') {
-            alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-            // Don't auto-clear messages - let user see them
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            alertContainer.innerHTML = `<div class="alert alert-${type}"><i data-lucide="${icon}"></i> ${message}</div>`;
+            lucide.createIcons();
         }
 
         function connectProgressStream(sessionId) {
@@ -748,7 +790,8 @@
 
             // Show loading
             generateBtn.disabled = true;
-            generateBtn.textContent = '⏳ Generating... (~2 minutes)';
+            generateBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Generating... (~2 minutes)</span>';
+            lucide.createIcons();
             loadingIndicator.classList.add('active');
             resultContainer.style.display = 'none';
             placeholderText.style.display = 'none';
@@ -785,19 +828,20 @@
                     resultImage.src = data.image_url;
                     downloadBtn.href = data.image_url;
                     resultContainer.style.display = 'block';
-                    showAlert('✅ ' + (data.message || 'Image generated successfully!'), 'success');
+                    showAlert(data.message || 'Image generated successfully!', 'success');
                 } else {
                     stopProgressSimulation(false);
-                    showAlert('❌ ' + (data.error || 'Generation failed'));
+                    showAlert(data.error || 'Generation failed');
                     placeholderText.style.display = 'block';
                 }
             } catch (error) {
                 stopProgressSimulation(false);
-                showAlert('❌ Network error: ' + error.message);
+                showAlert('Network error: ' + error.message);
                 placeholderText.style.display = 'block';
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.textContent = '🎨 Generate Image';
+                generateBtn.innerHTML = '<i data-lucide="wand-2"></i> <span>Generate Image</span>';
+                lucide.createIcons();
 
                 // Delay hiding loading indicator to show 100% completion
                 setTimeout(() => {
@@ -816,6 +860,13 @@
             .then(data => console.log('Server status:', data))
             .catch(err => console.error('Server not responding:', err));
     </script>
+
+    <style>
+        /* Spinning animation for loader */
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
 </body>
 
 </html>

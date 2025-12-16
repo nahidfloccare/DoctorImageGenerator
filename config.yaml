@@ -11,9 +11,10 @@ model_settings:
   scheduler: "beta"  # From Doctor.json - using beta scheduler
   denoise: 1.0
 
-# LoRA Settings
+# LoRA Settings (DISABLED - removed from Doctor.json)
 lora:
-  name: "xlabs_flux_realism_lora.safetensors"  # From Doctor.json node 80
+  enabled: false  # LoRA node removed from workflow
+  name: "UltraRealistic_v2.safetensors"
   strength: 0.5
 
 # PuLID Settings
@@ -32,8 +33,18 @@ image_settings:
 # Upscale Settings
 upscale:
   enabled: true
-  scale: 2.0  # From Doctor.json node 90 - 2x upscale
-  method: "bicubic"
+  scale: 4.0  # From Doctor.json node 90 - 4x upscale
+  method: "lanczos"  # Updated: best quality for photos
+
+# REAL1SM Refinement Pass Settings
+refinement:
+  enabled: true
+  model: "REAL1SM_V3_FP8.safetensors"  # From Doctor.json node 91
+  steps: 200  # Updated from Doctor.json node 101
+  cfg: 1.0
+  sampler: "euler"
+  scheduler: "karras"
+  denoise: 0.4  # Updated from Doctor.json
 
 # Default Prompts
 default_prompts:
@@ -51,16 +62,18 @@ detail_enhancement:
   hand_detector: "bbox/hand_yolov9c.pt"
   # Face FaceDetailer (node 86) settings  
   face_refinement_denoise: 0.66  # From Doctor.json node 86
-  face_refinement_steps: 200
+  face_refinement_steps: 150  # Updated from Doctor.json
   face_guide_size: 1024
   face_detector: "bbox/face_yolov8m.pt"
+  face_scheduler: "beta"  # Updated from Doctor.json
 
 # ReActor Face Swap Settings
 reactor:
   enabled: true
   swap_model: "inswapper_128.onnx"
   facedetection: "retinaface_resnet50"
-  face_restore_model: "none"
+  face_restore_model: "codeformer-v0.1.0.pth"  # Updated to use CodeFormer
+  codeformer_weight: 0.5
 
 # Paths
 paths:
@@ -71,4 +84,4 @@ paths:
 
 # Workflow to use
 workflow:
-  default: "Doctor.json"  # Use the Doctor.json workflow
+  default: "Doctor.json"  # Now in root directory (not ComfyUI/)
